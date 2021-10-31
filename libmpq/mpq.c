@@ -29,6 +29,7 @@
 #include "common.h"
 
 /* generic includes. */
+#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
@@ -137,7 +138,7 @@ int32_t libmpq__archive_open(mpq_archive_s **mpq_archive, const char *mpq_filena
 	if ((*mpq_archive)->fp == NULL) {
 
 		/* file could not be opened. */
-		result = LIBMPQ_ERROR_OPEN;
+		result = errno == ENOENT ? LIBMPQ_ERROR_EXIST : LIBMPQ_ERROR_OPEN;
 		goto error;
 	}
 
