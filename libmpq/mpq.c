@@ -346,6 +346,66 @@ error:
 	return result;
 }
 
+/* duplicates an mpq archive. */
+int32_t libmpq__archive_dup(mpq_archive_s *orig_archive, const char *mpq_filename, mpq_archive_s **mpq_archive) {
+	int32_t result = 0;
+
+	if ((*mpq_archive = calloc(1, sizeof(mpq_archive_s))) == NULL) {
+
+		/* archive struct could not be allocated */
+		return LIBMPQ_ERROR_MALLOC;
+	}
+
+	/* check if file exists and is readable */
+	if (((*mpq_archive)->fp = fopen_utf8(mpq_filename)) == NULL) {
+
+		/* file could not be opened. */
+		result = errno == ENOENT ? LIBMPQ_ERROR_EXIST : LIBMPQ_ERROR_OPEN;
+		goto error;
+	}
+
+	(*mpq_archive)->block_size = orig_archive->block_size;
+	(*mpq_archive)->archive_offset = orig_archive->archive_offset;
+	(*mpq_archive)->mpq_header = orig_archive->mpq_header;
+	(*mpq_archive)->mpq_header_ex = orig_archive->mpq_header_ex;
+	(*mpq_archive)->files = orig_archive->files;
+
+	const mpq_header_s *header = &(*mpq_archive)->mpq_header;
+
+	/* allocate memory for the block table, hash table, file and block table to file mapping. */
+	if (((*mpq_archive)->mpq_block    = malloc(header->block_table_count * sizeof(mpq_block_s))) == NULL ||
+	    ((*mpq_archive)->mpq_block_ex = malloc(header->block_table_count * sizeof(mpq_block_ex_s))) == NULL ||
+	    ((*mpq_archive)->mpq_hash     = malloc(header->hash_table_count  * sizeof(mpq_hash_s))) == NULL ||
+	    ((*mpq_archive)->mpq_file     = calloc(header->block_table_count, sizeof(mpq_file_s))) == NULL ||
+	    ((*mpq_archive)->mpq_map      = malloc(header->block_table_count * sizeof(mpq_map_s))) == NULL) {
+
+		/* memory allocation problem. */
+		result = LIBMPQ_ERROR_MALLOC;
+		goto error;
+	}
+
+	memcpy((*mpq_archive)->mpq_block, orig_archive->mpq_block, header->block_table_count * sizeof(mpq_block_s));
+	memcpy((*mpq_archive)->mpq_block_ex, orig_archive->mpq_block_ex, header->block_table_count * sizeof(mpq_block_ex_s));
+	memcpy((*mpq_archive)->mpq_hash, orig_archive->mpq_hash, header->block_table_count * sizeof(mpq_hash_s));
+	memcpy((*mpq_archive)->mpq_map, orig_archive->mpq_map, header->block_table_count * sizeof(mpq_map_s));
+
+	return LIBMPQ_SUCCESS;
+error:
+	if ((*mpq_archive)->fp)
+		fclose((*mpq_archive)->fp);
+
+	free((*mpq_archive)->mpq_map);
+	free((*mpq_archive)->mpq_file);
+	free((*mpq_archive)->mpq_hash);
+	free((*mpq_archive)->mpq_block);
+	free((*mpq_archive)->mpq_block_ex);
+	free(*mpq_archive);
+
+	*mpq_archive = NULL;
+
+	return result;
+}
+
 /* this function close the file descriptor, free the decryption buffer and the file list. */
 int32_t libmpq__archive_close(mpq_archive_s *mpq_archive) {
 
