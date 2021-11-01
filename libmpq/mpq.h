@@ -71,6 +71,7 @@ extern LIBMPQ_API const char *libmpq__strerror(int32_t return_code);
 /* generic mpq archive information. */
 extern LIBMPQ_API int32_t libmpq__archive_open(mpq_archive_s **mpq_archive, const char *mpq_filename, libmpq__off_t archive_offset);
 extern LIBMPQ_API int32_t libmpq__archive_close(mpq_archive_s *mpq_archive);
+extern LIBMPQ_API int32_t libmpq__archive_dup(mpq_archive_s *orig_archive, const char *mpq_filename, mpq_archive_s **mpq_archive);
 extern LIBMPQ_API int32_t libmpq__archive_size_packed(mpq_archive_s *mpq_archive, libmpq__off_t *packed_size);
 extern LIBMPQ_API int32_t libmpq__archive_size_unpacked(mpq_archive_s *mpq_archive, libmpq__off_t *unpacked_size);
 extern LIBMPQ_API int32_t libmpq__archive_offset(mpq_archive_s *mpq_archive, libmpq__off_t *offset);
