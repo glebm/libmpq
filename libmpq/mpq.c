@@ -27,6 +27,7 @@
 
 /* libmpq generic includes. */
 #include "common.h"
+#include "endian.h"
 
 /* generic includes. */
 #include <errno.h>
@@ -114,6 +115,55 @@ static FILE *fopen_utf8(const char *filename) {
 #endif
 }
 
+static void bswap_mpq_header(mpq_header_s *mpq_header) {
+	mpq_header->mpq_magic = libmpq__bswap_LE32(mpq_header->mpq_magic);
+	mpq_header->header_size = libmpq__bswap_LE32(mpq_header->header_size);
+	mpq_header->archive_size = libmpq__bswap_LE32(mpq_header->archive_size);
+	mpq_header->version = libmpq__bswap_LE16(mpq_header->version);
+	mpq_header->block_size = libmpq__bswap_LE16(mpq_header->block_size);
+	mpq_header->hash_table_offset = libmpq__bswap_LE32(mpq_header->hash_table_offset);
+	mpq_header->block_table_offset = libmpq__bswap_LE32(mpq_header->block_table_offset);
+	mpq_header->hash_table_count = libmpq__bswap_LE32(mpq_header->hash_table_count);
+	mpq_header->block_table_count = libmpq__bswap_LE32(mpq_header->block_table_count);
+}
+
+static void bswap_mpq_header_ex(mpq_header_ex_s *mpq_header_ex) {
+	mpq_header_ex->extended_offset = libmpq__bswap_LE64(mpq_header_ex->extended_offset);
+	mpq_header_ex->hash_table_offset_high = libmpq__bswap_LE16(mpq_header_ex->hash_table_offset_high);
+	mpq_header_ex->block_table_offset_high = libmpq__bswap_LE16(mpq_header_ex->block_table_offset_high);
+}
+
+static void bswap_mpq_hash(mpq_hash_s *mpq_hash, size_t count) {
+	for (size_t i = 0; i < count; ++i) {
+		mpq_hash[i].hash_a = libmpq__bswap_LE32(mpq_hash[i].hash_a);
+		mpq_hash[i].hash_b = libmpq__bswap_LE32(mpq_hash[i].hash_b);
+		mpq_hash[i].locale = libmpq__bswap_LE16(mpq_hash[i].locale);
+		mpq_hash[i].platform = libmpq__bswap_LE16(mpq_hash[i].platform);
+		mpq_hash[i].block_table_index = libmpq__bswap_LE32(mpq_hash[i].block_table_index);
+	}
+}
+
+static void bswap_mpq_block(mpq_block_s *mpq_block, size_t count) {
+	for (size_t i = 0; i < count; ++i) {
+		mpq_block[i].offset = libmpq__bswap_LE32(mpq_block[i].offset);
+		mpq_block[i].packed_size = libmpq__bswap_LE32(mpq_block[i].packed_size);
+		mpq_block[i].unpacked_size = libmpq__bswap_LE32(mpq_block[i].unpacked_size);
+		mpq_block[i].flags = libmpq__bswap_LE32(mpq_block[i].flags);
+	}
+}
+
+static void bswap_mpq_block_ex(mpq_block_ex_s *mpq_block_ex, size_t count) {
+	for (size_t i = 0; i < count; ++i) {
+		mpq_block_ex[i].offset_high = libmpq__bswap_LE16(mpq_block_ex[i].offset_high);
+	}
+}
+
+static void bswap_uint32s(uint32_t *values, size_t count) {
+	for (size_t i = 0; i < count; ++i) {
+		values[i] = libmpq__bswap_LE32(values[i]);
+	}
+}
+
 /* this function read a file and verify if it is a valid mpq archive, then it read and decrypt the hash table. */
 int32_t libmpq__archive_open(mpq_archive_s **mpq_archive, const char *mpq_filename, libmpq__off_t archive_offset) {
 
@@ -168,6 +218,8 @@ int32_t libmpq__archive_open(mpq_archive_s **mpq_archive, const char *mpq_filena
 			result = LIBMPQ_ERROR_FORMAT;
 			goto error;
 		}
+
+		bswap_mpq_header(&(*mpq_archive)->mpq_header);
 
 		/* check if we found a valid mpq header. */
 		if ((*mpq_archive)->mpq_header.mpq_magic == LIBMPQ_HEADER) {
@@ -232,6 +284,7 @@ int32_t libmpq__archive_open(mpq_archive_s **mpq_archive, const char *mpq_filena
 			result = LIBMPQ_ERROR_FORMAT;
 			goto error;
 		}
+		bswap_mpq_header_ex(&(*mpq_archive)->mpq_header_ex);
 	}
 
 	/* allocate memory for the block table, hash table, file and block table to file mapping. */
@@ -261,6 +314,7 @@ int32_t libmpq__archive_open(mpq_archive_s **mpq_archive, const char *mpq_filena
 		result = LIBMPQ_ERROR_READ;
 		goto error;
 	}
+	bswap_mpq_hash((*mpq_archive)->mpq_hash, (*mpq_archive)->mpq_header.hash_table_count);
 
 	/* decrypt the hashtable. */
 	libmpq__decrypt_block((uint32_t *)((*mpq_archive)->mpq_hash), (*mpq_archive)->mpq_header.hash_table_count * sizeof(mpq_hash_s), libmpq__hash_string("(hash table)", 0x300));
@@ -280,6 +334,7 @@ int32_t libmpq__archive_open(mpq_archive_s **mpq_archive, const char *mpq_filena
 		result = LIBMPQ_ERROR_READ;
 		goto error;
 	}
+	bswap_mpq_block((*mpq_archive)->mpq_block, (*mpq_archive)->mpq_header.block_table_count);
 
 	/* decrypt block table. */
 	libmpq__decrypt_block((uint32_t *)((*mpq_archive)->mpq_block), (*mpq_archive)->mpq_header.block_table_count * sizeof(mpq_block_s), libmpq__hash_string("(block table)", 0x300));
@@ -302,6 +357,7 @@ int32_t libmpq__archive_open(mpq_archive_s **mpq_archive, const char *mpq_filena
 			result = LIBMPQ_ERROR_FORMAT;
 			goto error;
 		}
+		bswap_mpq_block_ex((*mpq_archive)->mpq_block_ex, (*mpq_archive)->mpq_header.block_table_count);
 	}
 
 	/* loop through all files in mpq archive and check if they are valid. */
@@ -868,6 +924,7 @@ int32_t libmpq__block_open_offset_with_filename(mpq_archive_s *mpq_archive, uint
 			result = LIBMPQ_ERROR_READ;
 			goto error;
 		}
+		bswap_uint32s(mpq_archive->mpq_file[file_number]->packed_offset, packed_size / sizeof(uint32_t));
 
 		/* check if the archive is protected some way, sometimes the file appears not to be encrypted, but it is.
 		 * a special case are files with an additional sector but LIBMPQ_FLAG_CRC not set. we don't want to handle
@@ -1040,6 +1097,7 @@ int32_t libmpq__block_open_offset(mpq_archive_s *mpq_archive, uint32_t file_numb
 			result = LIBMPQ_ERROR_READ;
 			goto error;
 		}
+		bswap_uint32s(mpq_archive->mpq_file[file_number]->packed_offset, packed_size / sizeof(uint32_t));
 
 		/* check if the archive is protected some way, sometimes the file appears not to be encrypted, but it is.
 		 * a special case are files with an additional sector but LIBMPQ_FLAG_CRC not set. we don't want to handle
