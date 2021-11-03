@@ -91,6 +91,8 @@ extern LIBMPQ_API void libmpq__file_hash(const char *filename, uint32_t *hash1, 
 extern LIBMPQ_API int32_t libmpq__file_number_from_hash(mpq_archive_s *mpq_archive, uint32_t hash1, uint32_t hash2, uint32_t hash3, uint32_t *number);
 extern LIBMPQ_API int32_t libmpq__file_read(mpq_archive_s *mpq_archive, uint32_t file_number, uint8_t *out_buf, libmpq__off_t out_size, libmpq__off_t *transferred);
 extern LIBMPQ_API int32_t libmpq__file_read_with_filename(mpq_archive_s *mpq_archive, uint32_t file_number, const char *filename, uint8_t *out_buf, libmpq__off_t out_size, libmpq__off_t *transferred);
+extern LIBMPQ_API int32_t libmpq__file_read_with_temporary_buffer(mpq_archive_s *mpq_archive, uint32_t file_number, uint8_t *out_buf, libmpq__off_t out_size, uint8_t *tmp_buf, libmpq__off_t tmp_size, libmpq__off_t *transferred);
+extern LIBMPQ_API int32_t libmpq__file_read_with_filename_and_temporary_buffer(mpq_archive_s *mpq_archive, uint32_t file_number, const char *filename, uint8_t *out_buf, libmpq__off_t out_size, uint8_t *tmp_buf, libmpq__off_t tmp_size, libmpq__off_t *transferred);
 
 /* generic block processing functions. */
 extern LIBMPQ_API int32_t libmpq__block_open_offset(mpq_archive_s *mpq_archive, uint32_t file_number);
@@ -98,6 +100,7 @@ extern LIBMPQ_API int32_t libmpq__block_open_offset_with_filename(mpq_archive_s 
 extern LIBMPQ_API int32_t libmpq__block_close_offset(mpq_archive_s *mpq_archive, uint32_t file_number);
 extern LIBMPQ_API int32_t libmpq__block_size_unpacked(mpq_archive_s *mpq_archive, uint32_t file_number, uint32_t block_number, libmpq__off_t *unpacked_size);
 extern LIBMPQ_API int32_t libmpq__block_read(mpq_archive_s *mpq_archive, uint32_t file_number, uint32_t block_number, uint8_t *out_buf, libmpq__off_t out_size, libmpq__off_t *transferred);
+extern LIBMPQ_API int32_t libmpq__block_read_with_temporary_buffer(mpq_archive_s *mpq_archive, uint32_t file_number, uint32_t block_number, uint8_t *out_buf, libmpq__off_t out_size, uint8_t *tmp_buf, libmpq__off_t tmp_size, libmpq__off_t *transferred);
 
 #ifdef __cplusplus
 }
