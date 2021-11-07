@@ -291,7 +291,7 @@ int32_t libmpq__archive_open(mpq_archive_s **mpq_archive, const char *mpq_filena
 	if (((*mpq_archive)->mpq_block    = calloc((*mpq_archive)->mpq_header.block_table_count, sizeof(mpq_block_s))) == NULL ||
 	    ((*mpq_archive)->mpq_block_ex = calloc((*mpq_archive)->mpq_header.block_table_count, sizeof(mpq_block_ex_s))) == NULL ||
 	    ((*mpq_archive)->mpq_hash     = calloc((*mpq_archive)->mpq_header.hash_table_count,  sizeof(mpq_hash_s))) == NULL ||
-	    ((*mpq_archive)->mpq_file     = calloc((*mpq_archive)->mpq_header.block_table_count, sizeof(mpq_file_s))) == NULL ||
+	    ((*mpq_archive)->mpq_file     = calloc((*mpq_archive)->mpq_header.block_table_count, sizeof(mpq_file_s *))) == NULL ||
 	    ((*mpq_archive)->mpq_map      = calloc((*mpq_archive)->mpq_header.block_table_count, sizeof(mpq_map_s))) == NULL) {
 
 		/* memory allocation problem. */
@@ -432,7 +432,7 @@ int32_t libmpq__archive_dup(mpq_archive_s *orig_archive, const char *mpq_filenam
 	if (((*mpq_archive)->mpq_block    = malloc(header->block_table_count * sizeof(mpq_block_s))) == NULL ||
 	    ((*mpq_archive)->mpq_block_ex = malloc(header->block_table_count * sizeof(mpq_block_ex_s))) == NULL ||
 	    ((*mpq_archive)->mpq_hash     = malloc(header->hash_table_count  * sizeof(mpq_hash_s))) == NULL ||
-	    ((*mpq_archive)->mpq_file     = calloc(header->block_table_count, sizeof(mpq_file_s))) == NULL ||
+	    ((*mpq_archive)->mpq_file     = calloc(header->block_table_count, sizeof(mpq_file_s *))) == NULL ||
 	    ((*mpq_archive)->mpq_map      = malloc(header->block_table_count * sizeof(mpq_map_s))) == NULL) {
 
 		/* memory allocation problem. */
